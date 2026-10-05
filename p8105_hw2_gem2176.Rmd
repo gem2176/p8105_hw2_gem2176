@@ -1,0 +1,6 @@
+---
+title: "p8105_hw2_gem2176"
+author: "Giuliana Motta"
+date: "2026-10-05"
+output: github_document
+---
