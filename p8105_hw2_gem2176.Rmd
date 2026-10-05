@@ -8,6 +8,7 @@ output: github_document
 Libraries
 ```{r}
 library(tidyverse)
+library(dplyr)
 ```
 
 
@@ -28,4 +29,38 @@ nyc_transit_df =
         "NO"~ "FALSE"),
     entry = as.logical(entry))
 ```
+This data set describes the NYC subway station entrances and exits. For each entrance and exit, it includes variables describing the line, the station, the latitude and longitude of the station, the routes that pass through the station (up to 11 routes), whether entry is allows, whether the entry is with or without vending, the type of entrance, and whether the entrance is ADA compliant. Thus far, the data has been cleaned to only include variables of interest and to transform the entry variable from a character variable to a vector variable. The current data frame has 19 columns and 1868 rows. The data is not tidy because the route number and name are in wide format instead of long format. 
+
+Calculating how many distinct stations there are:
+```{r}
+nrow(distinct(nyc_transit_df, line, station_name))
+```
+There are 465 distinct stations in NYC
+
+
+Assessing the number of stations that are ADA compliant
+```{r}
+nyc_transit_df |> 
+  filter(ada == TRUE) |> 
+  distinct(line, station_name) |>
+  nrow()
+```
+There are 84 stations that are ADA compliant 
+
+
+Calculating the proportion of station entrances and exits without vending that allow entrance
+```{r}
+denominator <- nyc_transit_df |> 
+  filter(vending == "NO") |> 
+  nrow()
+
+numerator <- nyc_transit_df |> 
+  filter(vending == "NO") |> 
+  filter(entry == TRUE) |> 
+  nrow()
+
+100*(numerator/denominator)
+```
+37.71% of station entraces and exits without vending allow entrance. 
+
 
