@@ -296,7 +296,7 @@ amyloid_missing=
 combined_mci_df=
   inner_join(baseline_omit_df, mci_amyloid_df)
 ```
-This dataset combines the demographic and biomarker datasets so that only participants who appear in both datasets are retained. The resulting data has `r nrow(combined_mci_wide_df)` participants.
+This dataset combines the demographic and biomarker datasets so that only participants who appear in both datasets are retained. The resulting data has `r nrow(combined_mci_df)` participants.
 
 #### Exporting data
 ```{r}
