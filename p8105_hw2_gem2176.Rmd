@@ -102,14 +102,15 @@ There are 60 stations that serve the a train and 17 of these stations are ada co
 mr_trash_df = 
   read_excel("data/202610 Trash Wheel Collection Data.xlsx", 
                       sheet = "Mr. Trash Wheel",
-                      range = "A2:N709", 
+                      range = "A2:N742", 
                       col_names = TRUE,
                       na = "") |> 
   janitor :: clean_names() |> 
   mutate(
     sports_balls = as.integer(sports_balls),
     trash_wheel = "mr_trash",
-    year = as.numeric(year))
+    year = as.numeric(year),
+    plastic_bottles = as.numeric(plastic_bottles))
 ```
 
 #### Reading in Prof. Trash Wheel Dataset
@@ -117,12 +118,13 @@ mr_trash_df =
 prof_trash_df = 
   read_excel("data/202610 Trash Wheel Collection Data.xlsx", 
                       sheet = "Professor Trash Wheel",
-                      range = "A2:M134", 
+                      range = "A2:M139", 
                       col_names = TRUE,
                       na = "") |> 
   janitor :: clean_names() |> 
   mutate(trash_wheel= "prof_trash",
-         year = as.numeric(year))
+         year = as.numeric(year),
+         plastic_bottles = as.numeric(plastic_bottles))
 
 ```
 
@@ -131,12 +133,13 @@ prof_trash_df =
 gwynn_trash_df = 
   read_excel("data/202610 Trash Wheel Collection Data.xlsx", 
                       sheet = "Gwynnda the Good Wheel of the W",
-                      range = "A2:L351", 
+                      range = "A2:L394", 
                       col_names = TRUE,
                       na = "") |> 
   janitor :: clean_names() |> 
   mutate(trash_wheel= "gwynn_trash", 
-         year= as.numeric(year))
+         year= as.numeric(year),
+         plastic_bottles = as.numeric(plastic_bottles))
 ```
 
 
@@ -148,19 +151,20 @@ trash_tidy_df =
     plastic_bottles:sports_balls, #columns
     names_to = "litter_type", 
     values_to = "litter_count")
-  )
 ```
 
 #### Calculating the total weight of trash collected by Professor Trash Wheel and the total number of cigarette butts collected by Gwynnda in June of 2022. 
 ```{r}
-ptw_sum = sum(mr_trash_df$weight_tons)
+ptw_sum = sum(prof_trash_df$weight_tons)
 
 gtw = 
-  gwynn_trash_df |> 
+  trash_tidy_df |> 
   filter(year == 2022) |> 
-  filter(month == "June")
+  filter(month == "June") |> 
+  filter(trash_wheel== "gwynn_trash") |> 
+  filter(litter_type == "cigarette_butts")
 
-gtw_sum = sum(gtw$cigarette_butts)
+gtw_sum = sum(gtw$litter_count)
 ```
 
 
@@ -239,7 +243,7 @@ This data set represents baseline demographic data at study baseline. Variables 
 #### Importing, cleaning, and tidying the dataset of longitudinally observed biomarker values
 
 ```{r}
-mci_amyloid_df_long =
+mci_amyloid_df =
   read_csv("data/data_mci/mci_amyloid.csv",
            skip = 1,
            na = c("NA", "", "Na")) |> 
@@ -247,15 +251,19 @@ mci_amyloid_df_long =
   rename(id = study_id ) |> 
   pivot_longer(
     baseline:time_8, #columns
-    names_to = "time", 
-    values_to = "amyloid ratio")
+    names_to = "time_elapsed", 
+    values_to = "amyloid_ratio") |> 
+  mutate(
+    time_elapsed = 
+      case_match( 
+        time_elapsed,
+        "baseline" ~ 0,
+        "time_2"~ 2,
+        "time_4"~ 4,
+        "time_6"~ 6,
+        "time_8"~ 8
+        ))
 
-mci_amyloid_df_wide =
-  read_csv("data/data_mci/mci_amyloid.csv",
-           skip = 1,
-           na = c("NA", "", "Na")) |> 
-  janitor :: clean_names() |> 
-  rename(id = study_id )
 ```
 Data was imported from a CSV file and cleaned, ensuring that values inserted as "Na" and "NA" were coded as NA. The data was tidied by converting from wide format to long format. 
 
@@ -265,26 +273,25 @@ Data was imported from a CSV file and cleaned, ensuring that values inserted as 
 #Performing a full join to identify the ids that do not match 
 
 baseline_missing=
-  anti_join(baseline_omit_df,mci_amyloid_df_wide)
+  anti_join(baseline_omit_df,mci_amyloid_df) |> 
+  distinct(id)
 
 amyloid_missing=
-  anti_join(mci_amyloid_df_wide,baseline_omit_df)
+  anti_join(mci_amyloid_df,baseline_omit_df) |> 
+  distinct(id)
 
 ```
-`r nrow(baseline_missing)` participant ids appear only in the amyloid dataset and `r nrow(amyloid_missing)` participant ids appear only in the baseline dataset. These participants were excluded from the dataset. 
+`r nrow(baseline_missing)` participant ids appear only in the baseline dataset and `r nrow(amyloid_missing)` participant ids appear only in the amyloid dataset. These participants were excluded from the dataset. 
 
 #### Removing participants that appear only in one dataset 
 ```{r}
-combined_mci_wide_df=
-  inner_join(baseline_omit_df, mci_amyloid_df_wide)
-
-combined_mci_long_df=
-  inner_join(baseline_omit_df, mci_amyloid_df_long)
+combined_mci_df=
+  inner_join(baseline_omit_df, mci_amyloid_df)
 ```
 This dataset combines the demographic and biomarker datasets so that only participants who appear in both datasets are retained. The resulting data has `r nrow(combined_mci_wide_df)` participants.
 
 #### Exporting data
 ```{r}
-write_csv(combined_mci_long_df, file = "mci_combined.csv")
+write_csv(combined_mci_df, file = "mci_combined.csv")
 ```
 
