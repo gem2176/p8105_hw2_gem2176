@@ -155,16 +155,24 @@ trash_tidy_df =
 
 #### Calculating the total weight of trash collected by Professor Trash Wheel and the total number of cigarette butts collected by Gwynnda in June of 2022. 
 ```{r}
-ptw_sum = sum(prof_trash_df$weight_tons)
+ptw = 
+  trash_tidy_df |> 
+  filter(trash_wheel== "prof_trash") |> 
+  distinct(date,weight_tons) |> 
+  pull(weight_tons)
+  
+ptw_sum =
+  (ptw)
 
 gtw = 
   trash_tidy_df |> 
   filter(year == 2022) |> 
   filter(month == "June") |> 
   filter(trash_wheel== "gwynn_trash") |> 
-  filter(litter_type == "cigarette_butts")
+  filter(litter_type == "cigarette_butts") |> 
+  pull(litter_count)
 
-gtw_sum = sum(gtw$litter_count)
+gtw_sum = sum(gtw)
 ```
 
 
